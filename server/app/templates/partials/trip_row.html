@@ -1,0 +1,47 @@
+{# The route's own label first; failing that the two places'. Raw keys are the
+   last resort — they show up only for a place that has since been deleted.
+   Bound once because the sort key and the visible text must never diverge. #}
+{% set route_name = t.route_label
+     or ((t.origin_label or t.origin_key) ~ " → " ~ (t.dest_label or t.dest_key)
+         if t.origin_key and t.dest_key else "?") %}
+{% set delta = ((t.duration_sec - t.predicted_sec) / 60) | round | int
+               if t.duration_sec and t.predicted_sec else None %}
+{# `data-bucket` is the filter key, `data-sort` on each cell the sort key. Both
+   are rendered HERE, not derived in JS, so the row htmx swaps in after a
+   verdict arrives already sortable and filterable. The bucket comes off
+   `verdict` alone, which makes the three chips a complete partition of the
+   list: no row can end up hidden from all of them. #}
+<tr id="trip-{{ t.id }}"
+    data-bucket="{{ 'confirmed' if t.verdict == 'confirmed'
+                    else 'rejected' if t.verdict == 'rejected' else 'pending' }}"
+    {% if t.needs_review and t.verdict == 'auto' %}class="review"{% endif %}>
+  {# start_utc is fixed-width ISO, so a lexical sort on it IS chronological —
+     and it carries the clock time, which is what "sort by date" has to mean
+     once two trips share a day. #}
+  <td data-sort="{{ t.start_utc }}">{{ t.local_date }}</td>
+  <td data-sort="{{ t.local_mod }}">{{ "%02d:%02d" | format(t.local_mod // 60, t.local_mod % 60) }}</td>
+  <td data-sort="{{ route_name | lower }}">{{ route_name }}</td>
+  <td data-sort="{{ t.duration_sec or '' }}">{% if t.duration_sec %}{{ t.duration_sec | fmt_min }}{% else %}—{% endif %}</td>
+  <td data-sort="{{ t.predicted_sec or '' }}">{% if t.predicted_sec %}{{ t.predicted_sec | fmt_min }}{% else %}—{% endif %}</td>
+  <td data-sort="{{ delta if delta is not none else '' }}">
+    {% if delta is not none %}
+      <span class="{{ 'd-bad' if delta > 0 else 'd-good' if delta < 0 }}">{{ "+" if delta > 0 }}{{ delta }} min</span>
+    {% else %}—{% endif %}
+  </td>
+  <td data-sort="{{ t.status }}"><span class="pill pill--{{ t.status }}">{{ t.status }}</span>
+      {% if t.review_reason %}<span class="help">{{ t.review_reason }}</span>{% endif %}</td>
+  <td data-sort="{{ t.verdict }}">
+    {% if t.verdict == 'auto' and t.status in ('complete', 'abandoned') %}
+      <form style="display:inline" hx-post="/trips/{{ t.id }}/verdict" hx-target="#trip-{{ t.id }}" hx-swap="outerHTML">
+        <input type="hidden" name="verdict" value="confirmed">
+        <button class="btn btn--small" type="submit">Confirm</button>
+      </form>
+      <form style="display:inline" hx-post="/trips/{{ t.id }}/verdict" hx-target="#trip-{{ t.id }}" hx-swap="outerHTML">
+        <input type="hidden" name="verdict" value="rejected">
+        <button class="btn btn--small" type="submit">Reject</button>
+      </form>
+    {% else %}
+      <span class="muted">{{ t.verdict }}</span>
+    {% endif %}
+  </td>
+</tr>

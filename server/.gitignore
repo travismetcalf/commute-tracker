@@ -1,0 +1,10 @@
+.env
+data/
+scripts/*-last-success
+scripts/poll-fail-count
+scripts/anomaly-state
+scripts/*.log
+__pycache__/
+*.pyc
+.DS_Store
+*.p8

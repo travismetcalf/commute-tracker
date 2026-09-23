@@ -1,0 +1,693 @@
+/* ============================================================
+   commute-tracker — theme + layout
+   ------------------------------------------------------------
+   Tokens: Signal's "dusk" palette verbatim for dark; the light
+   ramp is new (Signal is dark-only), anchored on the cream from
+   Signal's global-error page and contrast-checked. Fonts are
+   Signal's pair (Source Serif 4 display / Inter Tight UI),
+   self-hosted variable woff2 — no CDN.
+   Layout is NOT Signal's: it follows the researched dashboard
+   IA (three-tier: answer → trends → exploration).
+   Numbers wear Inter Tight (sans) per dataviz practice; the
+   serif carries titles and prose only. tabular-nums ONLY in
+   columns/axes — hero figures use proportional figures.
+   ============================================================ */
+
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/static/fonts/source-serif-4-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/static/fonts/source-serif-4-italic-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/static/fonts/inter-tight-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---- tokens: LIGHT (default) ---- */
+:root {
+  --paper: #f4f1ea;
+  --paper-raised: #ffffff;
+  --ink: #1a1b2e;
+  --ink-soft: #4a4763;
+  --ink-faint: #635f7d;
+  --rule: #e0dbd0;
+  --rule-strong: #c9c3b6;
+  --accent: #a8182f;
+  --accent-deep: #8e1428;
+  --accent-tint: #f7e9ec;
+  --gold: #806017;          /* text-safe on cream (5.2:1); fills use --gold-fill */
+  --good-ink: #106b0c;      /* status green, 5.7:1 on its tint */
+  --good-tint: #e3f0e0;
+  --mark-good: #0f890a;     /* chart marks, >=3:1 on raised */
+  --mark-bad: #cb1414;
+  --gold-fill: #d8b25a;
+  --score-track: #e5e1d8;
+  --selection: #edd3d8;
+  --switch-track: #d8d3c8;
+  --switch-knob: #635f7d;   /* matches --ink-faint; #fff on this track is 1.49:1, under 3:1 */
+  --shadow-card: 0 1px 2px rgba(26, 27, 46, 0.06), 0 8px 24px -12px rgba(26, 27, 46, 0.18);
+  --shadow-card-hover: 0 2px 6px rgba(26, 27, 46, 0.10), 0 16px 40px -16px rgba(26, 27, 46, 0.28);
+
+  /* charts (validated: dataviz six checks, light surface) */
+  --series-predicted: #a8182f;
+  --series-actual: #5f54a8;
+  --band-fill: rgba(168, 24, 47, 0.10);
+  --heat-1: #0f890a; --heat-2: #65cc85; --heat-3: #e4de27;
+  --heat-4: #e78530; --heat-5: #cb1414;
+  --heat-empty: #eae6dc;
+
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-ui: "Inter Tight", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* ---- tokens: DARK (Signal dusk, verbatim) ---- */
+:root[data-theme="dark"] {
+  --chip-bad-ink: #e65e73;   /* 4.97:1 on the wine tint */
+  --good-ink: #55c96f;       /* status green, 7.5:1 on its tint */
+  --good-tint: #152719;
+  --mark-good: #34c759;
+  --mark-bad: #ef5348;       /* heat-5 #cb1414 is 2.9:1 on dusk — brightened for marks */
+  --paper: #0f1020;
+  --paper-raised: #1a1b2e;
+  --ink: #ece9f5;
+  --ink-soft: #b3aecb;
+  --ink-faint: #8d89aa;
+  --rule: #272844;
+  --rule-strong: #383a5e;
+  --accent: #c41e3a;
+  --accent-deep: #e0485f;
+  --accent-tint: #241a26;
+  --gold: #d8b25a;
+  --gold-fill: #d8b25a;
+  --score-track: #2a2b45;
+  --selection: #3a2336;
+  --switch-track: #2a2b45;
+  --switch-knob: #8d89aa;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -16px rgba(0, 0, 0, 0.7);
+  --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.5), 0 26px 56px -20px rgba(0, 0, 0, 0.82);
+
+  --series-predicted: #c41e3a;
+  --series-actual: #8579dc;
+  --band-fill: rgba(224, 72, 95, 0.12);
+  --heat-1: #0f890a; --heat-2: #65cc85; --heat-3: #e4de27;
+  --heat-4: #e78530; --heat-5: #cb1414;
+  --heat-empty: #1c1d33;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --chip-bad-ink: #e65e73;
+    --good-ink: #55c96f;
+    --good-tint: #152719;
+    --mark-good: #34c759;
+    --mark-bad: #ef5348;
+    --paper: #0f1020;
+    --paper-raised: #1a1b2e;
+    --ink: #ece9f5;
+    --ink-soft: #b3aecb;
+    --ink-faint: #8d89aa;
+    --rule: #272844;
+    --rule-strong: #383a5e;
+    --accent: #c41e3a;
+    --accent-deep: #e0485f;
+    --accent-tint: #241a26;
+    --gold: #d8b25a;
+    --gold-fill: #d8b25a;
+    --score-track: #2a2b45;
+    --selection: #3a2336;
+    --switch-track: #2a2b45;
+    --switch-knob: #8d89aa;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -16px rgba(0, 0, 0, 0.7);
+    --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.5), 0 26px 56px -20px rgba(0, 0, 0, 0.82);
+    --series-predicted: #c41e3a;
+    --series-actual: #8579dc;
+    --band-fill: rgba(224, 72, 95, 0.12);
+    --heat-1: #0f890a; --heat-2: #65cc85; --heat-3: #e4de27;
+    --heat-4: #e78530; --heat-5: #cb1414;
+    --heat-empty: #1c1d33;
+  }
+}
+
+/* ---- base ---- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+::selection { background: var(--selection); }
+html { height: 100%; }
+body {
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+a { color: var(--accent-deep); text-decoration: none; }
+a:hover { text-decoration: underline; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 30px 96px; }
+@media (max-width: 680px) { .wrap { padding: 0 16px 72px; } }
+
+/* ---- sticky control bar ---- */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--paper) 85%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 1px solid var(--rule);
+}
+.topbar__inner {
+  max-width: 1320px; margin: 0 auto; padding: 10px 30px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+@media (max-width: 680px) {
+  .topbar__inner { padding: 8px 16px; gap: 8px; }
+  /* Phone widths: the brand's auto margin plus the select's intrinsic width
+     (as wide as its longest route label) pushes the header to THREE rows.
+     Let the brand and the select share row one and let the select shrink —
+     min-width:0 defeats a form control's auto min-content floor, and a 0
+     flex-basis keeps it on the brand's row when the wrap is computed. The
+     truncated label costs nothing: every scoped card echoes it in full. */
+  .topbar__brand { margin-right: 0; }
+  .topbar__inner > .select { flex: 1 1 0; min-width: 0; }
+}
+.topbar__brand {
+  font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink);
+  margin-right: auto; white-space: nowrap;
+}
+.topbar__brand .dot { color: var(--accent-deep); }
+
+.seg { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: 9px; overflow: hidden; }
+.seg__btn {
+  font: 600 13px var(--font-ui); color: var(--ink-soft);
+  background: transparent; border: 0; padding: 7px 16px; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.seg__btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.seg__btn:not([aria-pressed="true"]):hover { background: var(--accent-tint); }
+/* in-zone instance: it labels a zone, so it sits at eyebrow weight */
+.seg--sm .seg__btn { padding: 4px 11px; font-size: 12px; }
+
+.select {
+  font: 500 13px var(--font-ui); color: var(--ink);
+  background: var(--paper-raised); border: 1px solid var(--rule-strong);
+  border-radius: 9px; padding: 7px 10px;
+}
+.navlink {
+  font: 600 13px var(--font-ui); color: var(--ink-soft);
+  padding: 6px 11px; border-radius: 7px;
+}
+.navlink:hover { background: var(--accent-tint); text-decoration: none; }
+.navlink--active { color: var(--ink); background: var(--accent-tint); }
+.badge {
+  display: inline-block; min-width: 18px; text-align: center;
+  font: 700 11px var(--font-ui); color: #fff;
+  background: var(--accent); border-radius: 999px; padding: 1px 6px;
+  margin-left: 4px; vertical-align: 1px;
+}
+.theme-toggle {
+  font: 600 12px var(--font-ui); color: var(--ink-faint);
+  background: transparent; border: 1px solid var(--rule); border-radius: 9px;
+  padding: 6px 10px; cursor: pointer;
+}
+.theme-toggle:hover { border-color: var(--rule-strong); color: var(--ink-soft); }
+.userchip { font: 500 12px var(--font-ui); color: var(--ink-faint); white-space: nowrap; }
+
+/* ---- zones ----
+   Four zones, one story: NOW → PLANNING → PATTERNS → TRUST. The zone label is
+   an EYEBROW, not a title: the serif belongs to cards and sections, so the
+   navigational layer has to sit visually BELOW them or it competes with the
+   content it's organising. A hairline rule does the separating instead. */
+.zone { margin-top: 40px; }
+.zone:first-of-type { margin-top: 22px; }
+.zone__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 7px; margin-bottom: 16px;
+}
+.zone__eyebrow {
+  font: 600 11px var(--font-ui); letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.zone__head + * { margin-top: 0; }   /* the head already carries the gap */
+
+/* ---- section rhythm + cards ---- */
+.section { margin-top: 28px; }
+.section__title {
+  font-family: var(--font-display); font-size: 22px; font-weight: 700;
+  letter-spacing: -0.015em; line-height: 1; margin-bottom: 4px;
+}
+.section__context { font: 500 12px var(--font-ui); color: var(--ink-faint); margin-bottom: 12px; }
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 13px;
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
+}
+.grid { display: grid; gap: 20px; }
+/* Grid items default to min-width:auto and refuse to shrink below their
+   content (a rendered canvas, a min-width table) — the classic grid blowout
+   that clips cards at narrow viewports. min-width:0 lets tracks compress;
+   wide content then scrolls INSIDE its card instead of breaking the page. */
+.grid > * { min-width: 0; }
+.grid--2 { grid-template-columns: 1fr 1fr; }
+.grid--8-4 { grid-template-columns: 2fr 1fr; }
+@media (max-width: 920px) { .grid--2, .grid--8-4 { grid-template-columns: 1fr; } }
+
+/* ---- now card (the live number + the rows that explain it, in ONE card) ---- */
+/* align-self: start — the map card is tall because it also carries the legend
+   and the reliability list; a stretched sibling would frame ~400px of empty
+   paper in a border. The card hugs its content and the column just ends. */
+.nowcard { display: grid; gap: 2px; align-content: start; align-self: start; }
+.nowcard .seglist { margin-top: 4px; }
+.nowbar { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.nowbar__value { font: 700 40px var(--font-ui); letter-spacing: -0.02em; line-height: 1.1; }
+.nowbar__value small { font-size: 18px; font-weight: 600; color: var(--ink-soft); }
+.nowbar__meta { font: 500 13px var(--font-ui); color: var(--ink-faint); }
+.delta { font: 600 13px var(--font-ui); border-radius: 999px; padding: 2px 10px; }
+.delta--bad { color: var(--chip-bad-ink, var(--accent-deep)); background: var(--accent-tint); }
+.delta--good { color: var(--good-ink); background: var(--good-tint); }
+.d-good { color: var(--good-ink); font-weight: 600; }
+.d-bad { color: var(--chip-bad-ink, var(--accent-deep)); font-weight: 600; }
+
+/* Per-corridor live times, under the reference rows. Same swatch object as the
+   map legend (hence the same class), so the row and the line read as one thing;
+   the fill is written inline from CORRIDOR in commute.js, which is the only
+   place a corridor colour is allowed to come from in JS-built markup. */
+.altlist { display: grid; gap: 7px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rule); }
+.altlist__title {
+  font: 600 11px var(--font-ui); letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.altlist__row { display: flex; align-items: center; gap: 8px; font: 500 13px var(--font-ui); }
+.altlist .legend__swatch { flex: none; box-shadow: 0 0 0 1px var(--rule-strong); }
+.altlist__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.altlist__val { font-weight: 700; font-variant-numeric: tabular-nums; }
+/* fixed gutter: the deltas stack in a column the eye can scan down */
+.altlist__gap { min-width: 52px; text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* ---- hero cards + dotplot ---- */
+.hero { display: flex; flex-direction: column; gap: 6px; }
+.hero__label {
+  font: 600 11px var(--font-ui); letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.hero__value { font: 700 64px/1 var(--font-ui); letter-spacing: -0.03em; }
+.hero__value .unit { font-size: 22px; font-weight: 600; color: var(--ink-soft); margin-left: 4px; }
+.hero__sub { font: 500 13px var(--font-ui); color: var(--ink-faint); }
+.hero--thin .hero__value { opacity: 0.55; }
+.nchip {
+  display: inline-block; font: 600 11px var(--font-ui); color: var(--ink-faint);
+  border: 1px solid var(--rule); border-radius: 999px; padding: 1px 8px;
+}
+.dotplot { margin-top: 8px; }
+.dotplot svg { display: block; width: 100%; height: 46px; }
+/* ONE caption for BOTH dotplots — the identical sentence under each card was
+   four lines of duplicated prose in the page's most valuable space. */
+.dot-caption {
+  font: 500 11px var(--font-ui); color: var(--ink-faint);
+  margin-top: 8px; text-align: center;
+}
+@media (max-width: 680px) { .hero__value { font-size: 40px; } .hero__value .unit { font-size: 16px; } }
+
+/* ---- The Damage ---- */
+.damage { display: grid; grid-template-columns: auto 1fr auto; gap: 28px; align-items: center; }
+@media (max-width: 920px) { .damage { grid-template-columns: 1fr; gap: 18px; } }
+.damage__mult { font: 700 72px/1 var(--font-ui); letter-spacing: -0.03em; color: var(--accent); }
+.damage__mult-sub { font: 600 15px var(--font-ui); color: var(--ink-soft); margin-top: 4px; }
+.bullet { display: grid; gap: 10px; }
+.bullet__row { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 10px; }
+.bullet__name { font: 600 12px var(--font-ui); color: var(--ink-soft); text-align: right; }
+.bullet__track { position: relative; height: 22px; background: var(--score-track); border-radius: 4px; }
+.bullet__fill {
+  position: absolute; inset: 0 auto 0 0; border-radius: 4px 4px 4px 4px;
+  background: var(--series-predicted);
+}
+.bullet__fill--old { background: var(--ink-faint); }
+.bullet__ref { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.bullet__val {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font: 600 12px var(--font-ui); color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.ladder { display: grid; gap: 8px; min-width: 200px; }
+.ladder__row { display: flex; justify-content: space-between; gap: 14px; font: 500 13px var(--font-ui); }
+.ladder__key { color: var(--ink-faint); }
+.ladder__val { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ladder__delta { color: var(--accent); font-weight: 600; }
+
+/* ---- charts ---- */
+.chart-card { padding: 18px 18px 14px; }
+.chart-card__title { font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.chart-card__note { font: 500 11.5px var(--font-ui); color: var(--ink-faint); margin: 2px 0 10px; }
+.chart-box { position: relative; height: 240px; }
+.chart-box canvas { width: 100%; }
+.chart-empty {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 180px; text-align: center;
+  font: 500 13px var(--font-ui); color: var(--ink-faint);
+}
+/* an empty state INSIDE another card must not reserve a chart's worth of space */
+.chart-empty--slim { min-height: 0; justify-content: flex-start; text-align: left; padding: 2px 0; }
+
+/* ---- when to leave: two half-day panels in one card ---- */
+.panelpair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.panelpair > * { min-width: 0; }
+.panelpair .chart-box { height: 215px; }
+.panel__title {
+  font: 600 11px var(--font-ui); letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px;
+}
+/* The corridor these panels are pinned to. Dimmer than the half-day label —
+   it answers "which road", which is secondary to "which half of the day". */
+.panel__route { font-weight: 500; letter-spacing: 0.08em; opacity: 0.75; }
+@media (min-width: 761px) {
+  .panelpair > .panel + .panel { border-left: 1px solid var(--rule); padding-left: 20px; }
+}
+@media (max-width: 760px) { .panelpair { grid-template-columns: 1fr; } }
+.legend { display: flex; gap: 16px; margin-top: 8px; font: 500 12px var(--font-ui); color: var(--ink-soft); }
+.legend__key { display: inline-flex; align-items: center; gap: 6px; }
+.legend__swatch { width: 10px; height: 10px; border-radius: 3px; }
+
+/* ---- heatmap (semantic table) ---- */
+/* fixed layout: deterministic across engines (Safari's auto layout can
+   overflow a width:100% table and hands the label column an equal share,
+   creating a giant gutter). First column pinned; day columns split the rest;
+   min-width keeps cells >= tap-target size — narrower viewports scroll. */
+.heat { border-collapse: separate; border-spacing: 2px; width: 100%;
+        min-width: 420px; table-layout: fixed; }  /* floor keeps cells >=24px; wrapper scrolls below it */
+.heat thead th:first-child { width: 64px; }
+.heat caption { text-align: left; font: 500 11.5px var(--font-ui); color: var(--ink-faint); margin-bottom: 6px; }
+.heat th {
+  font: 600 10.5px var(--font-ui); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-faint); padding: 2px 4px; text-align: center;
+}
+.heat th[scope="row"] { text-align: right; font-variant-numeric: tabular-nums; }
+.heat td {
+  min-width: 24px; height: 26px; border-radius: 4px;
+  background: var(--heat-empty); border: 1px solid var(--rule);
+  font: 600 10.5px var(--font-ui); text-align: center; vertical-align: middle;
+  font-variant-numeric: tabular-nums; cursor: default;
+}
+.heat td:focus { outline: 2px solid var(--accent-deep); outline-offset: 1px; }
+/* column marginal: the heatmap's columns ARE the weekdays, so the weekday
+.heat tfoot tr > * { padding-top: 9px; }
+.heat tfoot th[scope="row"] { text-transform: uppercase; letter-spacing: 0.08em; }
+.heat__legend { display: flex; align-items: center; gap: 4px; font: 500 11px var(--font-ui); color: var(--ink-faint); justify-content: flex-end; margin-bottom: 6px; }
+.heat__step { width: 22px; height: 10px; border-radius: 2px; }
+
+/* ---- map ---- */
+.map-card { padding: 0; overflow: hidden; }
+#map { height: 380px; width: 100%; }
+@media (max-width: 680px) { #map { height: 240px; } }
+.seglist { display: grid; gap: 8px; }
+.seglist__row { display: flex; justify-content: space-between; font: 500 13px var(--font-ui); }
+.seglist__delay { font-weight: 700; font-variant-numeric: tabular-nums; }
+.map-legend {
+  display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 16px;
+  border-top: 1px solid var(--rule);
+  font: 500 12px var(--font-ui); color: var(--ink-soft);
+}
+/* corridor reliability rides inside the map card: it describes the same
+   corridors the map is drawing, so it is the map's legend for reliability */
+.map-card__rel { padding: 13px 16px 15px; border-top: 1px solid var(--rule); }
+/* Legend swatches mirror the map's line treatment (identity hue + casing), so
+   the key reads as the same object as the line it names. Keep these in lockstep
+   with CORRIDOR in commute.js — a legend that disagrees with the map is worse
+   than no legend. Theme-invariant, like the lines: the basemap under them is.
+   Red appears ONCE, on "slow stretches", because that is what red means on a
+   road map; corridor identity lives on the blue→purple→pink arc instead. */
+/* The ring is what lets the map keep the DEEP purple. Picking corridor hues for
+   a 10px chip on a dusk card would cost the map its widest colorblind margin;
+   a hairline ring buys the chip back for free. */
+.map-legend .legend__swatch { box-shadow: 0 0 0 1px var(--rule-strong); }
+.legend__swatch--primary { background: #2563eb; }
+.legend__swatch--slow    { background: #c8271c; }
+.legend__swatch--alt1    { background: #8f1c8a; }
+.legend__swatch--alt2    { background: #e5559a; }
+
+/* Map failed to construct (no WebGL): the card degrades to a note instead of
+   taking the rest of the page down with it. */
+.map--unavailable {
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; text-align: center;
+  font: 500 13px var(--font-ui); color: var(--ink-faint);
+  background: var(--paper-raised);
+}
+
+/* ---- corridor reliability ---- */
+.rellist { display: grid; gap: 12px; }
+.rellist__row { display: grid; gap: 3px; font: 500 13px var(--font-ui); }
+.rellist__row--thin { opacity: 0.62; }  /* n<8: shown, but visibly low-confidence */
+.rellist__head { display: flex; align-items: center; gap: 8px; }
+.rellist__mi { font-weight: 700; }
+.rellist__steady {
+  font: 700 10px var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--good-ink); background: var(--good-tint);
+  border-radius: 999px; padding: 2px 8px;
+}
+.rellist__stats {
+  display: flex; justify-content: space-between; gap: 10px;
+  color: var(--ink-soft); font-variant-numeric: tabular-nums;
+}
+
+/* ---- tables (trips, settings) ---- */
+.table { width: 100%; border-collapse: collapse; font: 500 13px var(--font-ui); }
+.table th {
+  font: 600 10.5px var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-faint); text-align: left; padding: 8px 10px;
+  border-bottom: 1px solid var(--rule-strong);
+}
+.table td { padding: 8px 10px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+.table tr.review td { background: var(--accent-tint); }
+/* A filtered-out row must lose its box entirely — [hidden] alone loses to any
+   `display` a table row picks up. */
+.table tr[hidden] { display: none; }
+
+/* Sortable headers. The <button> carries the click so the column is reachable
+   by keyboard; it inherits the th's type so the header still LOOKS like text. */
+.table th.sortable { padding: 0; }
+.th-sort {
+  display: flex; align-items: center; gap: 5px;
+  width: 100%; font: inherit; letter-spacing: inherit; text-transform: inherit;
+  color: inherit; text-align: left; background: none; border: 0;
+  padding: 8px 10px; cursor: pointer;
+  transition: color 0.12s ease;
+}
+/* The arrow is the ONLY sort marker on the page. Parking an idle glyph in every
+   column put eight of them on screen competing with the one that meant
+   something; an idle column now shows nothing until you point at it. The glyph
+   still occupies its box at zero opacity, so appearing shifts no text. */
+.th-sort::after {
+  content: "↓"; font-size: 9px; line-height: 1;
+  opacity: 0; transition: opacity 0.12s ease;
+}
+.th-sort:hover { color: var(--ink-soft); }
+.th-sort:hover::after { opacity: 0.45; }
+.table th[aria-sort="ascending"] .th-sort::after { content: "↑"; opacity: 1; }
+.table th[aria-sort="descending"] .th-sort::after { content: "↓"; opacity: 1; }
+/* The sorting column: full-ink label over a soft navy underline, drawn INSIDE
+   the cell so it sits on the header rule rather than thickening it. Quiet
+   enough to still read as a header, specific enough that the sort is never
+   something you hunt for. */
+.table th[aria-sort="ascending"],
+.table th[aria-sort="descending"] { box-shadow: inset 0 -2px 0 var(--ink-soft); }
+.table th[aria-sort="ascending"] .th-sort,
+.table th[aria-sort="descending"] .th-sort { color: var(--ink); }
+
+/* Toolbar above a table: filter chips left, row count right. */
+.tablebar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.chipbar { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  font: 600 12px var(--font-ui); color: var(--ink-faint);
+  background: transparent; border: 1px solid var(--rule-strong);
+  border-radius: 999px; padding: 4px 12px; cursor: pointer;
+  transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+}
+/* The check carries what colour alone cannot: on/off survives greyscale, a
+   crimson-blind reader, and a glance. Its box is reserved in BOTH states, so
+   toggling a chip never reflows the row beside it. */
+.chip::before {
+  content: "✓"; display: inline-block; width: 9px; margin-right: 5px;
+  font-size: 10px; visibility: hidden;
+}
+.chip[aria-pressed="true"]::before { visibility: visible; }
+.chip:hover { color: var(--ink-soft); border-color: var(--ink-faint); }
+/* Selected reuses the tinted-pill recipe the status pills already use rather
+   than a solid accent fill. Crimson is this page's one loud colour and it is
+   already spoken for — a late delta, a row that still wants a verdict. Two
+   filled pills that are ON BY DEFAULT outshouted both.
+   The LABEL stays ink, not accent: accent-deep on accent-tint measures 4.21 in
+   dark, under the 4.5 AA floor for 12px semibold. Ink on the same tint is 14:1
+   in both themes, and the tint, border and check carry the crimson anyway. */
+.chip[aria-pressed="true"] {
+  color: var(--ink); background: var(--accent-tint); border-color: var(--accent);
+}
+.chip[aria-pressed="true"]:hover { border-color: var(--accent-deep); }
+.chip:active { transform: translateY(1px); }
+/* Keyboard focus. The rest of the stylesheet styles focus only on .heat td and
+   .field input, so every control added here was invisible to a keyboard until
+   now. Same 2px accent ring that convention uses. */
+.th-sort:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tablebar__count {
+  font: 500 12px var(--font-ui); color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.pill {
+  display: inline-block; font: 600 11px var(--font-ui);
+  border-radius: 999px; padding: 2px 9px;
+}
+.pill--complete { color: var(--ink-soft); background: var(--score-track); }
+.pill--noise, .pill--abandoned { color: var(--accent-deep); background: var(--accent-tint); }
+/* Not a corridor measurement — a real drive, deliberately outside every average. */
+.pill--non_commute { color: var(--ink-faint); background: var(--score-track); }
+.pill--open { color: var(--gold); background: color-mix(in srgb, var(--gold-fill) 18%, transparent); }
+.btn {
+  font: 600 13px var(--font-ui); border-radius: 9px; padding: 7px 14px;
+  cursor: pointer; border: 1px solid var(--rule-strong);
+  background: var(--paper-raised); color: var(--ink);
+}
+.btn:hover { border-color: var(--accent); color: var(--accent-deep); }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn--primary:hover { background: var(--accent-deep); color: #fff; }
+.btn--small { padding: 4px 10px; font-size: 12px; }
+
+.field { display: grid; gap: 4px; margin-bottom: 12px; }
+.field label { font: 600 12px var(--font-ui); color: var(--ink-soft); }
+.field input, .field select {
+  font: 500 14px var(--font-ui); color: var(--ink);
+  background: var(--paper); border: 1px solid var(--rule-strong);
+  border-radius: 9px; padding: 8px 10px;
+}
+.field input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+.form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.form-row .field { flex: 1; min-width: 120px; }
+.help { font: 500 12px var(--font-ui); color: var(--ink-faint); }
+
+/* ---- confidence / empty-state utilities ---- */
+.muted { color: var(--ink-faint); }
+.src-tag {
+  font: 600 10px var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold-fill) 50%, transparent);
+  border-radius: 4px; padding: 1px 5px;
+}
+.confidence-strip {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px;
+  font: 500 12px var(--font-ui); color: var(--ink-faint);
+  background: var(--paper-raised); border: 1px solid var(--rule);
+  border-radius: 9px; padding: 8px 14px; margin-top: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.confidence-strip .cs__dot {
+  width: 7px; height: 7px; border-radius: 999px;
+  background: var(--mark-good); margin-right: 4px; flex: none;
+}
+.confidence-strip .cs__sep { color: var(--rule-strong); }
+.confidence-strip--stale { border-color: color-mix(in srgb, var(--accent) 45%, var(--rule)); }
+.confidence-strip--stale .cs__dot { background: var(--mark-bad); }
+
+/* ---- plan your week ---- */
+.plan { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+@media (max-width: 1080px) { .plan { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 680px) { .plan { grid-template-columns: 1fr; } }
+.plan__day { padding: 14px 16px; display: grid; gap: 6px; align-content: start; opacity: 0.62; }
+.plan__day--pick { opacity: 1; border-color: var(--mark-good); box-shadow: var(--shadow-card); }
+.plan__dow { font: 600 12px var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase;
+             color: var(--ink-soft); display: flex; justify-content: space-between; align-items: center; }
+.plan__badge { font: 700 10px var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase;
+               color: #fff; background: var(--mark-good); border-radius: 999px; padding: 2px 8px; }
+.plan__total { font: 700 26px/1 var(--font-ui); letter-spacing: -0.02em; }
+.plan__unit { font-size: 13px; font-weight: 600; color: var(--ink-faint); letter-spacing: 0; }
+.plan__legs { display: grid; gap: 2px; font: 500 12.5px var(--font-ui); color: var(--ink-soft); }
+
+/* ── settings ──────────────────────────────────────────────────────────────
+   One row shape for every setting: label and description stacked on the left,
+   the control on the right. This replaces a three-column flex whose third
+   column was load-bearing even when empty (the old settings.html said so in a
+   comment). With the help text under the label there is no third column to be
+   load-bearing.                                                              */
+/* Divider BETWEEN rows, not on the first. `.setting:first-of-type` would
+   match the first <div> of its type among siblings, not the first row —
+   and .matrix__head is a <div> that sits above these. */
+.setting { display: flex; align-items: center; gap: 16px; padding: 11px 0; }
+.setting + .setting { border-top: 1px solid var(--rule); }
+.setting__text { flex: 1; min-width: 0; }
+.setting__label { font: 500 13.5px var(--font-ui); color: var(--ink); line-height: 1.3; }
+.setting__help { font: 400 11.5px var(--font-ui); color: var(--ink-faint);
+                 line-height: 1.4; margin-top: 1px; }
+.setting__ctl { flex: none; display: flex; gap: 10px; align-items: center; }
+.setting__ctl input { font: 500 13px var(--font-ui); color: var(--ink);
+                      background: var(--paper); border: 1px solid var(--rule-strong);
+                      border-radius: 9px; padding: 7px 9px; width: 96px;
+                      text-align: right; font-variant-numeric: tabular-nums; }
+.setting__ctl input:focus-visible { outline: 2px solid var(--accent);
+                                    outline-offset: 0; border-color: transparent; }
+
+/* The switch is a button with aria-pressed, the same idiom .chip and .seg use,
+   so it needs no JS to be meaningful and survives greyscale: the knob moves as
+   well as the track recolouring. */
+.switch { width: 38px; height: 22px; flex: none; padding: 0; cursor: pointer;
+          border: 1px solid var(--rule-strong); border-radius: 999px;
+          background: var(--switch-track); position: relative;
+          transition: background 0.15s ease, border-color 0.15s ease; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px;
+                 width: 16px; height: 16px; border-radius: 50%;
+                 background: var(--switch-knob); transition: left 0.15s ease; }
+.switch[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+.switch[aria-pressed="true"]::after { left: 17px; background: #fff; }
+.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switch[disabled] { opacity: 0.35; cursor: not-allowed; }
+
+/* A channel a type cannot use renders as an em dash in its column, so the
+   matrix stays aligned and the gap is visibly deliberate rather than missing. */
+.matrix__head { display: flex; gap: 10px; align-items: center;
+                padding-bottom: 7px; border-bottom: 1px solid var(--rule-strong); }
+.matrix__col { width: 38px; flex: none; text-align: center;
+               font: 600 10px var(--font-ui); letter-spacing: 0.09em;
+               text-transform: uppercase; color: var(--ink-faint); }
+.matrix__none { width: 38px; flex: none; text-align: center; color: var(--rule-strong); }
+
+/* Save confirmation. Every save before this was a 303 with no feedback. */
+.saved { font: 500 11px var(--font-ui); color: var(--good-ink); }
+
+/* Rejected save. htmx only swaps on a 2xx, so this — not a dead-ended 4xx —
+   is how the user learns the value they typed was not stored. */
+.error { font: 500 11px var(--font-ui); color: var(--chip-bad-ink, var(--accent-deep)); }
+
+/* Focus rings the stylesheet never had. The comment at the .chip rule admits
+   this gap was patched only for chips; these are the rest. */
+.btn:focus-visible, .select:focus-visible,
+.navlink:focus-visible, .field select:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Inset, not offset: .seg sets overflow:hidden with no padding, so an
+   outward ring is clipped away entirely — the same reason .th-sort uses
+   a negative offset. */
+.seg__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* No :disabled rule existed anywhere in this stylesheet before now. */
+.btn[disabled], .setting__ctl input[disabled] {
+  opacity: 0.45; cursor: not-allowed; }

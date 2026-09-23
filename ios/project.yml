@@ -1,0 +1,170 @@
+# XcodeGen manifest — `xcodegen` regenerates Commute.xcodeproj from this file.
+# The .xcodeproj is NOT committed (merge-hostile); this file is the source of truth.
+name: Commute
+options:
+  bundleIdPrefix: com.travismetcalf
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    # 1.1.0 leapfrogs the accidental "1.0 (1)" first upload (the hardcoded-
+    # plist bug) so TestFlight sorts real builds on top with the right icon.
+    MARKETING_VERSION: "1.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: 8F62W24942
+
+targets:
+  Commute:
+    type: application
+    platform: iOS
+    # Shared/ also compiles into CommuteWatch — see Shared/SecStatus.swift.
+    sources: [Commute, Shared]
+    dependencies:
+      - target: CommuteWidget
+        embed: true
+      - target: CommuteWatch
+        embed: true
+    entitlements:
+      path: Commute/Commute.entitlements
+      properties:
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.travismetcalf.commute.shared
+        aps-environment: development
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.travismetcalf.commute
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # User-selectable alternate icons (Settings -> App Icon). Each name is
+        # an .appiconset in the catalog; setAlternateIconName() switches.
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIconArc AppIconDart AppIconPeaks AppIconABDusk AppIconABCrimson
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+    info:
+      path: Commute/Info.plist
+      properties:
+        CFBundleDisplayName: Commute
+        # xcodegen hardcodes 1.0/1 in generated plists unless these point at
+        # the build settings — without them every TestFlight upload is 1.0 (1)
+        # and the second one is rejected as a duplicate.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # REQUIRED in the Info.plist itself (the INFOPLIST_KEY_ build setting is
+        # ignored with a custom plist): without UILaunchScreen, iOS letterboxes
+        # the whole app in legacy compatibility sizing — dead bands top and
+        # bottom on every screen.
+        UILaunchScreen: {}
+        # Location: the WhenInUse string is REQUIRED even though we want Always
+        # (the Always request is a two-prompt flow that starts from it).
+        NSLocationWhenInUseUsageDescription: >-
+          Commute detects when you leave home or the office so your real
+          commute times land on your dashboard automatically.
+        NSLocationAlwaysAndWhenInUseUsageDescription: >-
+          Always access lets Commute record trips in the background —
+          no need to open the app before driving.
+        # Missing this key = crash on first Core Motion access, not a prompt.
+        NSMotionUsageDescription: >-
+          Motion activity confirms a trip was a drive (not a walk past the
+          geofence) and reconstructs drives the app missed, up to 7 days back.
+        # remote-notification is what lets a silent (content-available) push
+        # wake the app to reload widget timelines — without it APNs delivers
+        # visible alerts only and the background handler never runs.
+        UIBackgroundModes: [location, processing, remote-notification]
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.travismetcalf.commute.flush
+        ITSAppUsesNonExemptEncryption: false
+        # canOpenURL checks for the Navigate chooser (Apple Maps needs none)
+        LSApplicationQueriesSchemes: [comgooglemaps, waze, tomtomgo]
+        # Home Screen quick actions (long-press the app icon). Handled by
+        # QuickActionSceneDelegate; types must match its switch exactly.
+        UIApplicationShortcutItems:
+          - UIApplicationShortcutItemType: com.travismetcalf.commute.drive-start
+            UIApplicationShortcutItemTitle: I'm driving now
+            UIApplicationShortcutItemIconSymbolName: car.fill
+          - UIApplicationShortcutItemType: com.travismetcalf.commute.arrive
+            UIApplicationShortcutItemTitle: I've arrived
+            UIApplicationShortcutItemIconSymbolName: flag.checkered
+
+  # ── Apple Watch (Ultra 3, watchOS 11+): mini app + complications ─────────
+  # The watch talks to the server DIRECTLY (own radios); the bearer token
+  # arrives from the phone via WCSession applicationContext and lands in the
+  # shared keychain group so the complication extension can read it too.
+  CommuteWatch:
+    type: application
+    platform: watchOS
+    deploymentTarget: "11.0"
+    sources: [CommuteWatch, Shared]
+    dependencies:
+      - target: CommuteWatchWidget
+        embed: true
+    entitlements:
+      path: CommuteWatch/CommuteWatch.entitlements
+      properties:
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.travismetcalf.commute.shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.travismetcalf.commute.watchkitapp
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: CommuteWatch/Info.plist
+      properties:
+        CFBundleDisplayName: Commute
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.travismetcalf.commute
+
+  CommuteWatchWidget:
+    type: app-extension
+    platform: watchOS
+    deploymentTarget: "11.0"
+    sources: [CommuteWatchWidget]
+    entitlements:
+      path: CommuteWatchWidget/CommuteWatchWidget.entitlements
+      properties:
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.travismetcalf.commute.shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.travismetcalf.commute.watchkitapp.widget
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: YES
+    info:
+      path: CommuteWatchWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Commute
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  CommuteWidget:
+    type: app-extension
+    platform: iOS
+    sources: [CommuteWidget]
+    entitlements:
+      path: CommuteWidget/CommuteWidget.entitlements
+      properties:
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.travismetcalf.commute.shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.travismetcalf.commute.widget
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+    info:
+      path: CommuteWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Commute
+        # Apple requires the extension's version to MATCH the app's — both
+        # read the same build settings so they can't drift.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

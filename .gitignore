@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+
+# Xcode (Phase 2 — ios/)
+ios/Commute.xcodeproj/
+ios/**/xcuserdata/
+ios/**/DerivedData/
+*.xcuserstate
+
+# Python — bytecode for the icon-generation scripts in ios/Design/. These were
+# tracked by accident; the bytecode never actually changes, but the source mtime
+# recorded in each .pyc header does, so a branch switch alone dirtied the tree.
+__pycache__/
+*.pyc
+
+# Secrets — APNs signing key lives in a password manager, never in git
+*.p8
+.claude/worktrees/
+
+# Secrets — every .env variant, not just the bare file. `.env.*` exists because
+# timestamped backups (.env.bak-20260817-222036 and friends) held LIVE credentials
+# and were one `git add -A` away from being committed; two separate sessions made
+# them with two different naming schemes, so guarding one name is not enough.
+# No slash in the pattern, so it applies at every depth — server/, pipeline/, root.
+.env
+.env.*
+!.env.example
+
+# Python virtualenvs — provisioned by install.sh on Linux, by hand on the mac.
+# Never committed: they are machine-specific and large.
+.venv/

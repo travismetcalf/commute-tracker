@@ -1,0 +1,37 @@
+name: commute-tracker-stack
+
+services:
+  dashboard:
+    build: .
+    container_name: commute-tracker
+    restart: unless-stopped
+    # Run as the host user (uid:gid of the deploy user) instead of root: non-root reduces
+    # blast radius on a public dashboard while still writing the bind-mounted ./data.
+    user: "501:20"
+    ports:
+      - "127.0.0.1:8085:8085"
+    volumes:
+      - ./data:/app/data
+    environment:
+      TOMTOM_API_KEY: ${TOMTOM_API_KEY}
+      API_BEARER_TOKEN: ${API_BEARER_TOKEN}
+      TZ: America/New_York
+      # APNs. The path is HARDCODED to the in-container location rather than
+      # passed through from .env: APNS_KEY_PATH on the host is a host path, and
+      # the container only ever sees the key through the ./data bind mount.
+      # Everything else is a plain pass-through.
+      APNS_KEY_PATH: /app/data/apns.p8
+      APNS_KEY_ID: ${APNS_KEY_ID}
+      APNS_TEAM_ID: ${APNS_TEAM_ID}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID}
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8085/health')\" 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "1.0"

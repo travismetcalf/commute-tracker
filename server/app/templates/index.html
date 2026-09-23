@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/maplibre-gl.css">{% endblock %}
+
+{# The page tells ONE story in four zones:
+   NOW (is today weird) → PLANNING (what should I do) →
+   PATTERNS (why is it like this) → TRUST (can I believe you).
+   Direction scopes NOW and PATTERNS only, so the switcher lives in those two
+   zone headers — never in the site header, which would imply it scopes
+   PLANNING (it doesn't: PLANNING shows both half-days at once). #}
+
+{% block controls %}
+<select class="select" id="route-select" aria-label="Route"></select>
+{% endblock %}
+
+{% macro dirseg(id) -%}
+<div class="seg seg--sm dir-seg" id="{{ id }}" role="group" aria-label="Direction">
+  <button class="seg__btn" data-dir="office" aria-pressed="false">Home → Office</button>
+  <button class="seg__btn" data-dir="home" aria-pressed="false">Office → Home</button>
+</div>
+{%- endmacro %}
+
+{% block content %}
+
+{# ══ ZONE 1 · NOW — is today weird? ═════════════════════════════════════════ #}
+<section class="zone">
+  <div class="zone__head">
+    <span class="zone__eyebrow">Now</span>
+    {{ dirseg("dir-seg-now") }}
+  </div>
+
+  <div class="grid grid--8-4">
+    <div class="card map-card">
+      <div id="map"></div>
+      <div class="map-legend">
+        <span class="legend__key"><span class="legend__swatch legend__swatch--primary"></span>your corridor</span>
+        <span class="legend__key"><span class="legend__swatch legend__swatch--slow"></span>slow stretches</span>
+        <span class="legend__key"><span class="legend__swatch legend__swatch--alt1"></span><span class="legend__swatch legend__swatch--alt2"></span>alternate corridors</span>
+      </div>
+      <div class="map-card__rel">
+        <div class="chart-card__title">Corridor reliability</div>
+        <p class="chart-card__note">this direction, every corridor · buffer = p90 − median</p>
+        <div class="rellist" id="rellist"></div>
+        <div class="chart-empty chart-empty--slim" id="rel-empty">No corridor data yet — appears once a corridor has 5+ live samples.</div>
+      </div>
+    </div>
+
+    {# The live number lives here ONCE: the big figure, its delta, its freshness,
+       and the reference rows that explain it. #}
+    <div class="card nowcard">
+      <div class="nowbar" id="nowbar">
+        <span class="nowbar__value" id="now-value">—<small> min</small></span>
+        <span class="delta" id="now-delta" hidden></span>
+      </div>
+      <p class="nowbar__meta" id="now-meta">waiting for the first poll…</p>
+      <div class="seglist" id="seglist"><span class="muted">waiting for route data…</span></div>
+      {# Every corridor's live time, swatched to match its line on the map.
+         Hidden until there is more than one — a one-row "comparison" is just
+         the big number again. #}
+      <div class="altlist" id="altlist" hidden></div>
+    </div>
+  </div>
+</section>
+
+{# ══ ZONE 2 · PLANNING — what should I do? (both directions, always) ════════ #}
+<section class="zone">
+  <div class="zone__head">
+    <span class="zone__eyebrow">Planning</span>
+  </div>
+
+  <div class="grid grid--2">
+    {# Titles come from the corridors themselves — these two cards named one
+       deployment's offices in their markup until places became user-defined. #}
+    {% for key, fallback, sub in [("am_out", "Morning out", "leaving at 8:00 AM, weekdays"),
+                                  ("pm_in", "Evening back", "leaving at 5:00 PM, weekdays")] %}
+    {% set b = headline[key] %}
+    <div class="card hero {% if not b or b.n < 5 %}hero--thin{% endif %}">
+      <span class="hero__label">{{ headline.labels[key] or fallback }}</span>
+      <span class="hero__value">
+        {% if b and b.avg_sec %}{{ b.avg_sec | fmt_min }}
+        {% else %}—{% endif %}
+      </span>
+      <span class="hero__sub">
+        {{ sub }}
+        {% if b and b.n %}
+          · median {{ b.p50_sec | fmt_min }} · p90 {{ b.p90_sec | fmt_min }}
+          <span class="nchip">n={{ b.n }}</span>
+          {% if b.source == "historical" %}<span class="src-tag">typical profile</span>{% endif %}
+          {% if b.n < 5 %}<span class="muted">low confidence — needs 5 samples</span>{% endif %}
+        {% else %}
+          · <span class="muted">no data yet — polls run weekdays 7 AM–7 PM</span>
+        {% endif %}
+      </span>
+      {% if b and b.dots %}
+      <div class="dotplot">{{ b.dots | dotplot | safe }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {# ONE caption for BOTH dotplots — the same sentence twice is just noise. #}
+  {% if (headline.am_out and headline.am_out.dots) or (headline.pm_in and headline.pm_in.dots) %}
+  <p class="dot-caption">20 dots · each is a 1-in-20 chance · count from the right for your risk of a bad day</p>
+  {% endif %}
+
+  {# Two half-days side by side. The flat midday hours nobody plans by are cut;
+     what's left is the two windows you actually choose a departure inside. #}
+  <section class="section">
+    <h2 class="section__title">When to leave</h2>
+    <p class="section__context">both half-days, weekdays · shared vertical scale, so the panels are directly comparable
+      <br><span class="muted">always the primary corridors, whichever route the selector shows</span></p>
+    <div class="card chart-card">
+      <div class="panelpair">
+        <div class="panel">
+          <div class="panel__title">Morning <span class="panel__route" id="panel-am-route">· home → office</span></div>
+          <div class="chart-box"><canvas id="hourly-am-chart" role="img" aria-label="Morning commute time by departure hour"></canvas></div>
+          <div class="chart-empty" id="hourly-am-empty" hidden>No morning data yet — this fills in as polls run.</div>
+        </div>
+        <div class="panel">
+          <div class="panel__title">Evening <span class="panel__route" id="panel-pm-route">· office → home</span></div>
+          <div class="chart-box"><canvas id="hourly-pm-chart" role="img" aria-label="Evening commute time by departure hour"></canvas></div>
+          <div class="chart-empty" id="hourly-pm-empty" hidden>No evening data yet — this fills in as polls run.</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="legend__key"><span class="legend__swatch" style="background: var(--series-predicted)"></span>median (p50)</span>
+        <span class="legend__key"><span class="legend__swatch" style="background: var(--band-fill); border: 1px solid var(--series-predicted)"></span>10th–90th percentile — 8 of 10 trips fall inside</span>
+        <span class="legend__key"><span class="legend__swatch" style="background: var(--series-actual)"></span>your actual trips</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section__title">Plan your week</h2>
+    <p class="section__context">
+      best {{ plan.picks }} office day{{ "s" if plan.picks != 1 }} inside your window
+      {% if plan.window %}· leave home ≥ {{ plan.window.earliest_mod | hhmm }} · leave office ≤ {{ plan.window.latest_mod | hhmm }}
+      · {{ plan.window.office_hours }} h at the office{% endif %}
+    </p>
+    {% if plan.days %}
+    <div class="plan">
+      {% for d in plan.days %}
+      <div class="card plan__day {% if d.pick %}plan__day--pick{% endif %}">
+        <div class="plan__dow">{{ ["Monday","Tuesday","Wednesday","Thursday","Friday"][d.dow] }}
+          {% if d.pick %}<span class="plan__badge">go</span>{% endif %}</div>
+        <div class="plan__total">{{ d.total_sec | mins }}<span class="plan__unit"> min round trip</span></div>
+        <div class="plan__legs">
+          <span>→ leave home <strong>{{ d.leave_home_mod | hhmm }}</strong> ({{ d.out_sec | mins }} min)</span>
+          <span>← leave office <strong>{{ d.leave_office_mod | hhmm }}</strong> ({{ d.in_sec | mins }} min)</span>
+        </div>
+        {% if d.source == "historical" %}<span class="src-tag">typical profile</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if plan.spread_sec and plan.spread_sec > 300 %}
+    <p class="help" style="margin-top: 10px">
+      Picking the right days saves up to {{ plan.spread_sec | mins }} min per office day vs the worst choice.
+    </p>
+    {% endif %}
+    {% else %}
+    <div class="card chart-empty">Plan appears once route data exists.</div>
+    {% endif %}
+  </section>
+</section>
+
+{# ══ ZONE 3 · PATTERNS — why is it like this? ═══════════════════════════════ #}
+<section class="zone">
+  <div class="zone__head">
+    <span class="zone__eyebrow">Patterns</span>
+    {{ dirseg("dir-seg-patterns") }}
+  </div>
+
+  {# The heatmap's columns ARE the weekdays, so the old "By weekday" card was a
+     second chart of the same axis. It's now the grid's column marginal. #}
+  <div class="card chart-card">
+    <div class="chart-card__title">Departure heatmap</div>
+    <p class="chart-card__note" data-context>·</p>
+    <div class="heat__legend" id="heat-legend"></div>
+    <div style="overflow-x: auto"><table class="heat" id="heatmap"></table></div>
+  </div>
+</section>
+
+{# ══ ZONE 4 · TRUST — can I believe you? ═══════════════════════════════════ #}
+<section class="zone">
+  <div class="zone__head">
+    <span class="zone__eyebrow">Trust</span>
+  </div>
+
+  {# The comparison is between two places the user named, so this whole card
+     takes their labels from the payload. Fallbacks keep it readable before
+     either side has a place defined. #}
+  {% set primary_place = headline.labels.primary_place or "Where you drive now" %}
+  {% set baseline_place = headline.labels.baseline_place or "Your baseline" %}
+  <section class="section">
+    <h2 class="section__title">The damage</h2>
+    <p class="section__context">{{ primary_place }} vs {{ baseline_place }}, measured the same way</p>
+    <div class="card damage">
+      <div>
+        {% set m = headline.am_multiplier %}
+        {% if m and headline.am_out.n >= 5 and headline.old_am_out.n >= 5 %}
+          <div class="damage__mult">{{ m.ratio }}×</div>
+          <div class="damage__mult-sub">+{{ m.delta_sec | mins }} min each way, mornings</div>
+          {% if headline.pm_multiplier %}
+          <div class="damage__mult-sub muted">evenings: {{ headline.pm_multiplier.ratio }}× (+{{ headline.pm_multiplier.delta_sec | mins }} min)</div>
+          {% endif %}
+        {% else %}
+          <div class="damage__mult muted">—×</div>
+          <div class="damage__mult-sub muted">comparison unlocks at 5 samples per place</div>
+        {% endif %}
+      </div>
+      <div class="bullet">
+        {% set new_b, old_b = headline.am_out, headline.old_am_out %}
+        {% set maxv = [new_b.avg_sec or 1, old_b.avg_sec or 1] | max %}
+        <div class="bullet__row">
+          <span class="bullet__name">{{ baseline_place }}</span>
+          <div class="bullet__track">
+            {% if old_b.avg_sec %}
+            <div class="bullet__fill bullet__fill--old" style="width: {{ (old_b.avg_sec / maxv * 100) | round(1) }}%"></div>
+            <span class="bullet__val">{{ old_b.avg_sec | mins }} min</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="bullet__row">
+          <span class="bullet__name">{{ primary_place }}</span>
+          <div class="bullet__track">
+            {% if new_b.avg_sec %}
+            <div class="bullet__fill" style="width: {{ (new_b.avg_sec / maxv * 100) | round(1) }}%"></div>
+            {% if old_b.avg_sec %}<div class="bullet__ref" style="left: {{ (old_b.avg_sec / maxv * 100) | round(1) }}%"></div>{% endif %}
+            <span class="bullet__val">{{ new_b.avg_sec | mins }} min</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="help">8 AM departures, shared axis · marker = {{ baseline_place | lower }} time</div>
+      </div>
+      <div class="ladder">
+        {% if cost.new %}
+          <div class="ladder__row"><span class="ladder__key">Per day</span>
+            <span class="ladder__val">{{ cost.new.day_min }} min</span></div>
+          <div class="ladder__row"><span class="ladder__key">Per week ({{ cost.office_days_per_week | int }} office days)</span>
+            <span class="ladder__val">{{ cost.new.hrs_week }} hrs</span></div>
+          <div class="ladder__row"><span class="ladder__key">Per year</span>
+            <span class="ladder__val">{{ cost.new.hrs_year }} hrs
+              {% if cost.old and cost.new.hrs_year != cost.old.hrs_year %}<span class="ladder__delta">+{{ cost.new.hrs_year - cost.old.hrs_year }}</span>{% endif %}
+            </span></div>
+          {% if cost.fuel_year_new %}
+          <div class="ladder__row"><span class="ladder__key">Fuel / year</span>
+            <span class="ladder__val">${{ cost.fuel_year_new }}
+              {% if cost.fuel_year_old and cost.fuel_year_new != cost.fuel_year_old %}<span class="ladder__delta">+${{ cost.fuel_year_new - cost.fuel_year_old }}</span>{% endif %}
+            </span></div>
+          {% endif %}
+        {% else %}
+          <span class="muted">cost appears with the first samples</span>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section__title">Model check</h2>
+    <p class="section__context" id="bias-summary">
+      {% if bias.n >= 5 %}
+        Across {{ bias.n }} real trips, the API runs
+        {{ (bias.mean_error_sec | abs) | mins }} min
+        {{ "optimistic" if bias.mean_error_sec > 0 else "pessimistic" }} on average.
+      {% elif bias.n > 0 %}
+        {{ bias.n }} trip(s) captured — verdict at 5.
+      {% else %}
+        Appears once real trips are captured.
+      {% endif %}
+    </p>
+    <div class="card chart-card">
+      <div class="chart-box"><canvas id="bias-chart" role="img" aria-label="Actual versus predicted commute time"></canvas></div>
+      <div class="chart-empty" id="bias-empty" {% if bias.n > 0 %}hidden{% endif %}>
+        No captured trips yet — the iOS app (or a manual entry on the Trips page) feeds this.
+      </div>
+    </div>
+  </section>
+
+  {# Collection health — the project's named fear: "did the collection quietly
+     stop?" Server-rendered numbers; the age is recomputed client-side so it
+     stays honest on a tab that's been open for hours. #}
+  <div class="confidence-strip" id="confidence-strip" hidden
+       data-samples="{{ collection.n_samples }}"
+       data-newest="{{ collection.newest_ts_utc or '' }}"
+       data-calls="{{ collection.api_calls }}"
+       data-cap="{{ collection.api_cap }}"
+       data-in-window="{{ 1 if collection.in_window else 0 }}"></div>
+</section>
+
+<script id="boot-data" type="application/json">
+{{ {"routes": routes_ui, "bias": bias.points} | tojson }}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/chart.umd.min.js"></script>
+<script src="/static/js/maplibre-gl.js"></script>
+<script src="/static/js/commute.js"></script>
+{% endblock %}

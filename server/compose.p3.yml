@@ -1,0 +1,30 @@
+# Linux deploy-host override — used ONLY on the Linux deploy host:
+#   docker compose -f docker-compose.yml -f compose.p3.yml up -d
+#
+# Deliberately NOT named docker-compose*.yml: the CI compose validator globs
+# 'docker-compose*.yml' and stubs every ${VAR} to the literal 'ci-stub', which
+# is an invalid host IP in a ports line — so a host-IP override cannot live in a
+# CI-validated compose file. This file carries only deploy-host-specific facts and
+# is validated by hand on that host (docker compose config) at deploy time
+# instead — the same pattern the other services on this host use.
+#
+# Two differences from the mac base:
+#  - user: the login user on the Linux host is uid/gid 1000 (501:20 on the mac, where the
+#    container writes the bind-mounted ./data as the login user's uid/gid).
+#  - ports: Caddy stays on the macOS edge host through Phase 1 and reaches this
+#    dashboard over the tailnet, not via host.docker.internal — the mac base
+#    file's 127.0.0.1 bind would be unreachable from another host. 0.0.0.0
+#    (not a specific tailnet/LAN IP) keeps it working if the host's DHCP
+#    lease changes.
+#
+#    Accepted trade, and the reason this override is opt-in: binding 0.0.0.0
+#    leaves the raw dashboard reachable unauthenticated on whatever LAN and
+#    tailnet interfaces the host has. That is only safe behind a perimeter
+#    that blocks inbound from the internet, so DO NOT use this override
+#    unless your deployment has one. /api/v1/* still enforces its own bearer
+#    token regardless, and /health is harmless to expose.
+services:
+  dashboard:
+    user: "1000:1000"
+    ports: !override
+      - "0.0.0.0:8085:8085"

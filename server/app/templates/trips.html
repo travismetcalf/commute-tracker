@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Trips{% endblock %}
+
+{% block content %}
+<section class="section">
+  <h2 class="section__title">Captured trips</h2>
+  <p class="section__context">click a column to re-sort · tinted rows still want a verdict · rejected trips leave every average</p>
+  {% if trips %}
+  <div class="tablebar">
+    {# Three chips over one dimension — `verdict` — so they partition the list
+       exactly. Rejected starts OFF: those rows are already out of every
+       average, so their only job is being findable again on demand. #}
+    <div class="chipbar" id="trip-filters" role="group" aria-label="Filter by verdict">
+      <button class="chip" type="button" data-bucket="pending" aria-pressed="true">Pending</button>
+      <button class="chip" type="button" data-bucket="confirmed" aria-pressed="true">Confirmed</button>
+      <button class="chip" type="button" data-bucket="rejected" aria-pressed="false">Rejected</button>
+    </div>
+    <span class="tablebar__count" id="trip-count"></span>
+  </div>
+  {% endif %}
+  <div class="card" style="overflow-x: auto">
+    {% if trips %}
+    <table class="table" id="trips-table">
+      <thead><tr>
+        <th class="sortable" data-type="text" data-default="desc" aria-sort="none"><button class="th-sort" type="button">Date</button></th>
+        <th class="sortable" data-type="num"  data-default="asc"  aria-sort="none"><button class="th-sort" type="button">Start</button></th>
+        <th class="sortable" data-type="text" data-default="asc"  aria-sort="none"><button class="th-sort" type="button">Route</button></th>
+        <th class="sortable" data-type="num"  data-default="desc" aria-sort="none"><button class="th-sort" type="button">Actual</button></th>
+        <th class="sortable" data-type="num"  data-default="desc" aria-sort="none"><button class="th-sort" type="button">Predicted</button></th>
+        <th class="sortable" data-type="num"  data-default="desc" aria-sort="none"><button class="th-sort" type="button">Δ</button></th>
+        <th class="sortable" data-type="text" data-default="asc"  aria-sort="none"><button class="th-sort" type="button">Status</button></th>
+        <th class="sortable" data-type="text" data-default="asc"  aria-sort="none"><button class="th-sort" type="button">Verdict</button></th>
+      </tr></thead>
+      <tbody id="trips-body">
+        {% for t in trips %}{% include "partials/trip_row.html" %}{% endfor %}
+        {# No data-bucket, so the sorter and filter both skip it. #}
+        <tr id="trips-empty" hidden><td colspan="8" class="muted">Every trip is filtered out — turn a chip back on.</td></tr>
+      </tbody>
+    </table>
+    {% else %}
+    <div class="chart-empty">No trips yet. The iOS app feeds this automatically — or log one below.</div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section__title">Log a trip by hand</h2>
+  <p class="section__context">times are Eastern</p>
+  <div class="card">
+    {% if not places %}
+    <div class="chart-empty">Define your places at /settings first — a trip needs two ends.</div>
+    {% else %}
+    <form method="post" action="/trips/manual">
+      <div class="form-row">
+        <div class="field"><label for="m-start">Departed</label>
+          <input id="m-start" type="datetime-local" name="start_local" required></div>
+        <div class="field"><label for="m-end">Arrived</label>
+          <input id="m-end" type="datetime-local" name="end_local" required></div>
+        {# Both pickers list every place. From defaults to the home end and To
+           to the first office, which is the trip someone is most likely
+           back-filling — but neither is a fixed pair any more. #}
+        <div class="field"><label for="m-origin">From</label>
+          <select id="m-origin" class="select" name="origin_key">
+            {% for p in places %}
+            <option value="{{ p.key }}">{{ p.label }}</option>
+            {% endfor %}
+          </select></div>
+        <div class="field"><label for="m-dest">To</label>
+          <select id="m-dest" class="select" name="dest_key">
+            {% for p in places | sort(attribute="kind", reverse=true) %}
+            <option value="{{ p.key }}">{{ p.label }}</option>
+            {% endfor %}
+          </select></div>
+      </div>
+      <button class="btn btn--primary" type="submit">Save trip</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{# htmx now loads once, from base.html's <head> — a second tag here would
+   re-run its bootstrap and double-bind every hx-post handler (verdict swap
+   included), firing each request twice. #}
+<script src="/static/js/trips.js" defer></script>
+{% endblock %}

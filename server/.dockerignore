@@ -1,0 +1,7 @@
+data/
+.env
+scripts/
+launchd/
+.git/
+__pycache__/
+*.pyc

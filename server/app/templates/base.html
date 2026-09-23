@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Commute{% endblock %} · commute-tracker</title>
+<link rel="stylesheet" href="/static/css/app.css?v={{ asset_v }}">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/static/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+{% block head %}{% endblock %}
+<!-- Loaded here, once, because settings now save in place: every page needs
+     htmx, not just trips. trips.html extends this shell and no longer
+     carries its own copy of this tag — that coupling is implicit, so it's
+     noted here for the next reader. -->
+<script src="/static/js/htmx.min.js?v={{ asset_v }}" defer></script>
+<script>
+/* Theme before first paint (no flash): explicit choice wins, else system. */
+(function () {
+  var t = localStorage.getItem("ct.theme");
+  if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+})();
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar__inner">
+    <span class="topbar__brand">Commute<span class="dot">·</span>Tracker</span>
+    {% block controls %}{% endblock %}
+    <nav>
+      <a class="navlink {% if request.url.path == '/' %}navlink--active{% endif %}" href="/">Dashboard</a>
+      <a class="navlink {% if request.url.path == '/trips' %}navlink--active{% endif %}" href="/trips">Trips{% if review_count %}<span class="badge">{{ review_count }}</span>{% endif %}</a>
+      <a class="navlink {% if request.url.path == '/settings' %}navlink--active{% endif %}" href="/settings">Settings</a>
+    </nav>
+    <button class="theme-toggle" id="theme-toggle" title="Cycle theme (system → light → dark)">◐</button>
+    <span class="userchip" title="{{ 'Signed in via authentik SSO' if user.via == 'sso' else 'Local network access — the LAN surface bypasses SSO by design; the public URL requires login' }}">{{ '🔒 ' if user.via == 'sso' }}{{ user.username }}</span>
+  </div>
+</header>
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+<script>
+document.getElementById("theme-toggle").addEventListener("click", function () {
+  var cur = localStorage.getItem("ct.theme") || "system";
+  var next = cur === "system" ? "light" : cur === "light" ? "dark" : "system";
+  if (next === "system") { localStorage.removeItem("ct.theme"); delete document.documentElement.dataset.theme; }
+  else { localStorage.setItem("ct.theme", next); document.documentElement.dataset.theme = next; }
+  window.dispatchEvent(new Event("ct-theme-change"));
+});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

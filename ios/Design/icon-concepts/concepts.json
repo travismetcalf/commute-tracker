@@ -1,0 +1,42 @@
+[
+ {
+  "name": "ab-dusk",
+  "file": "ab-dusk.svg",
+  "rationale": "A single horizontal narrative on dusk navy \u2014 solid gold origin dot, ink round-capped arrow (170 shaft, 45-degree chevron head) pointing to a hollow ink-ringed destination \u2014 four flat geometric shapes, three brand tones, optically centered with equal 156-unit edge clearances so it reads instantly at 60x60."
+ },
+ {
+  "name": "ab-crimson",
+  "file": "ab-crimson.svg",
+  "rationale": "A loud flat-crimson field carries the A-to-B journey grammar \u2014 gold origin dot, ink arrow, hollow ink destination ring \u2014 in five-or-fewer round-capped geometric shapes that stay legible at 60 px."
+ },
+ {
+  "name": "ribbon-dusk",
+  "file": "ribbon-dusk.svg",
+  "rationale": "A single point-symmetric crimson S-ribbon (one smooth cubic path, 130-wide round caps) sweeps from (300,200) to (724,824) across a dusk-navy ground, with a gold origin dot and ink destination dot seated inside the ribbon's end caps like transit stops \u2014 four flat shapes, no text, legible at 60x60."
+ },
+ {
+  "name": "ribbon-crimson",
+  "file": "ribbon-crimson.svg",
+  "rationale": "A single 130-unit ink S-ribbon on solid crimson \u2014 its round-capped cubic sweeping diagonally through center (512,512) with ~100-unit lateral swing \u2014 reads instantly at 60px as a route from a gold origin dot to a deep-crimson destination dot, both seated inside the ribbon at its caps."
+ },
+ {
+  "name": "grid-badge",
+  "file": "grid-badge.svg",
+  "rationale": "A crimson badge with an ink navigation kite (rotated exactly 40 degrees, centroid-corrected to sit optically dead-center) floats over a whisper-quiet street grid drawn purely by the #1a1b2e-on-#0f1020 tone step, keeping three layers, four elements, and three brand tones."
+ },
+ {
+  "name": "CURRENT primary \u2014 Twin Peaks",
+  "file": "rush-hour-road.svg",
+  "rationale": ""
+ },
+ {
+  "name": "CURRENT alternate \u2014 The Trip",
+  "file": "arc-bigger.svg",
+  "rationale": ""
+ },
+ {
+  "name": "CURRENT alternate \u2014 Dart",
+  "file": "dart-goldtrail.svg",
+  "rationale": ""
+ }
+]

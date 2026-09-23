@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+{# One card per place, plus a blank one that creates. The set is whatever is in
+   the database — this page used to iterate three literal keys, which is what
+   made the whole app single-tenant. #}
+{% macro place_form(p) %}
+  <form method="post" action="/settings/place">
+    <input type="hidden" name="key" value="{{ p.key if p else '' }}">
+    <div class="form-row">
+      <div class="field" style="flex: 2"><label>Name</label>
+        <input name="label" value="{{ p.label if p else '' }}"
+               placeholder="{{ '' if p else 'e.g. Downtown Office' }}" required></div>
+      <div class="field"><label>Type</label>
+        <select class="select" name="kind">
+          <option value="home" {{ "selected" if p and p.kind == "home" }}>Home</option>
+          <option value="office" {{ "selected" if not p or p.kind != "home" }}>Office</option>
+        </select></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Latitude</label>
+        <input name="lat" type="number" step="any" min="-90" max="90"
+               value="{{ p.lat if p else '' }}" required></div>
+      <div class="field"><label>Longitude</label>
+        <input name="lon" type="number" step="any" min="-180" max="180"
+               value="{{ p.lon if p else '' }}" required></div>
+      <div class="field"><label>Geofence radius (m)</label>
+        <input name="geofence_radius_m" type="number" min="100" max="500"
+               value="{{ p.geofence_radius_m if p else 175 }}"></div>
+    </div>
+    {# The explanation lives ONCE, in the section context — printed under every
+       card it was the same paragraph four times, in the space the coordinates
+       need. #}
+    <div class="form-row" style="align-items: center; gap: 10px">
+      <label style="display: flex; align-items: center; gap: 7px">
+        <input type="checkbox" name="monitored" value="1"
+               {{ "checked" if (p.monitored if p else True) }}>
+        <span>Monitored</span></label>
+      <span style="flex: 1"></span>
+      <button class="btn {{ 'btn--primary' if not p }}" type="submit">
+        {{ "Save" if p else "Add place" }}</button>
+      {# `form=` submits the sibling delete form below: HTML forbids nesting
+         forms, and this is what keeps the two buttons on one row anyway. #}
+      {% if p %}
+      <button class="btn btn--small" type="submit" form="del-{{ p.key }}">Delete</button>
+      {% endif %}
+    </div>
+  </form>
+  {% if p %}
+  <form id="del-{{ p.key }}" method="post" action="/settings/place/delete">
+    <input type="hidden" name="key" value="{{ p.key }}">
+  </form>
+  {% endif %}
+{% endmacro %}
+
+<section class="section">
+  <h2 class="section__title">Notifications</h2>
+  <p class="section__context">what reaches you, and how</p>
+  <div class="card">
+    <div class="matrix__head">
+      <span style="flex: 1"></span>
+      <span class="matrix__col">Email</span>
+      <span class="matrix__col">Push</span>
+    </div>
+    {% for n in notifications %}
+      {% with key = n.key, label = n.label, help = n.help,
+              kind = "switch", channels = n.channels, saved = false %}
+        {% include "partials/setting_row.html" %}
+      {% endwith %}
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section__title">Places</h2>
+  <p class="section__context">use the driveway/garage point, not the street centroid — a 200 m error changes the first turn
+    <br><span class="muted"><strong>Monitored</strong> means the phone geofences it and its corridors poll
+    every cycle. Untick a place you no longer drive to: it keeps its coordinates and its history as a
+    baseline to compare against, at a third of the API cost.</span></p>
+  {% if error %}<div class="card" style="margin-bottom: 12px"><p class="help">{{ error }}</p></div>{% endif %}
+  {% if places and not has_home %}
+  <div class="card" style="margin-bottom: 12px"><p class="help">
+    No place is marked <strong>Home</strong> yet. Routes are built from every
+    home-to-office pair, so nothing is polled until one place is the home end.
+  </p></div>
+  {% endif %}
+  <div class="grid grid--2">
+    {% for p in places %}
+    <div class="card">{{ place_form(p) }}</div>
+    {% endfor %}
+    <div class="card">
+      <div class="chart-card__title">Add a place</div>
+      {{ place_form(none) }}
+    </div>
+    <div class="card">
+      <div class="chart-card__title">Routes</div>
+      <p class="help" style="margin: 6px 0 10px">Derived from the places above —
+        every home-to-office pair, both ways. Divisor 3 = polled every 3rd cycle
+        (30 min), which is what an unmonitored place's baseline corridors get.</p>
+      <table class="table">
+        <thead><tr><th>Route</th><th>Role</th><th>Divisor</th><th>Alts</th><th>On</th></tr></thead>
+        <tbody>
+        {% for r in routes %}
+          <tr><td>{{ r.label }}</td><td>{{ r.role }}</td><td>{{ r.poll_divisor }}</td>
+              <td>{{ r.max_alternatives }}</td><td>{{ "yes" if r.enabled else "no" }}</td></tr>
+        {% else %}
+          <tr><td colspan="5" class="muted">none yet — add a home and an office first</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+{% for g in groups %}
+<section class="section">
+  <h2 class="section__title">{{ g.title }}</h2>
+  {% if g.context %}<p class="section__context">{{ g.context }}</p>{% endif %}
+  <div class="card">
+    {% for row in g.rows %}
+      {% with key = row.key, label = row.label, help = row.help,
+              kind = row.kind, value = row.value, saved = false %}
+        {% include "partials/setting_row.html" %}
+      {% endwith %}
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

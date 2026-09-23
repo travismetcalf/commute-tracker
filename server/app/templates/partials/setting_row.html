@@ -1,0 +1,34 @@
+{# One settings row. Rendered inline by settings.html and swapped back by
+   /settings/value on an htmx save, so the saved state comes from the server
+   rather than being assumed by the client. #}
+<div class="setting" id="set-{{ key }}">
+  <div class="setting__text">
+    <div class="setting__label">{{ label }}</div>
+    {% if help %}<div class="setting__help">{{ help }}</div>{% endif %}
+  </div>
+  <div class="setting__ctl">
+    {% if kind == "switch" %}
+      {% for ch in channels %}
+        {% if ch.setting_key %}
+        <button class="switch" type="button"
+                role="switch" aria-pressed="{{ 'true' if ch.on else 'false' }}"
+                aria-label="{{ label }} by {{ ch.channel }}"
+                hx-post="/settings/value"
+                hx-vals='{"key": "{{ ch.setting_key }}", "value": "{{ 0 if ch.on else 1 }}"}'
+                hx-target="#set-{{ key }}" hx-swap="outerHTML"></button>
+        {% else %}<span class="matrix__none">&mdash;</span>{% endif %}
+      {% endfor %}
+    {% else %}
+      <input name="value" value="{{ value }}"
+             hx-post="/settings/value" hx-trigger="change"
+             hx-vals='{"key": "{{ key }}"}'
+             hx-target="#set-{{ key }}" hx-swap="outerHTML">
+    {% endif %}
+    {% if saved %}<span class="saved">saved</span>{% endif %}
+    {# `row_error`, NOT `error` — settings.html's page-level `error` (the
+       Places banner) is in ambient scope for every `{% include %}` of this
+       partial by default, and would otherwise leak that unrelated message
+       onto every single row whenever the page carries an `?err=`. #}
+    {% if row_error %}<span class="error">{{ row_error }}</span>{% endif %}
+  </div>
+</div>
